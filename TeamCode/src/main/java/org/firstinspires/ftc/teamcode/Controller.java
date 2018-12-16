@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.Range;
+import com.qualcomm.robotcore.hardware.DcMotor;
 
 @TeleOp(name="Controller", group="4719")
 
@@ -10,7 +10,6 @@ public class Controller extends LinearOpMode {
 
 
     HardwareP robot = new HardwareP();
-
 
     @Override
     public void runOpMode() {
@@ -25,35 +24,10 @@ public class Controller extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-/*
-            float gamepad1LeftY = -gamepad1.left_stick_y;
-            float gamepad1LeftX = gamepad1.left_stick_x;
-            float gamepad1RightX = gamepad1.right_stick_x;
+            /// driveStraightForward();
+            //driveStraightSideways();
+            driveStraightFinal();
 
-            // holonomic formulas
-
-            float FrontLeft = -gamepad1LeftY - gamepad1LeftX - gamepad1RightX;
-            float FrontRight = gamepad1LeftY - gamepad1LeftX - gamepad1RightX;
-            float BackRight = gamepad1LeftY + gamepad1LeftX - gamepad1RightX;
-            float BackLeft = -gamepad1LeftY + gamepad1LeftX - gamepad1RightX;
-
-            // clip the right/left values so that the values never exceed +/- 1
-            FrontRight = Range.clip(FrontRight, -1, 1);
-            FrontLeft = Range.clip(FrontLeft, -1, 1);
-            BackLeft = Range.clip(BackLeft, -1, 1);
-            BackRight = Range.clip(BackRight, -1, 1);
-
-            // write the values to the motors
-            robot.rightFront.setPower(FrontRight / 1.25);
-            robot.leftFront.setPower(-FrontLeft / 1.25);
-            robot.leftBack.setPower(-BackLeft / 1.25);
-            robot.rightBack.setPower(BackRight / 1.25);
-            */
-
-            robot.rightFront.setPower(-gamepad1.left_stick_y);
-            robot.leftBack.setPower(-gamepad1.left_stick_y);
-            robot.leftFront.setPower(gamepad1.left_stick_x);
-            robot.rightBack.setPower(gamepad1.left_stick_x);
             while(Math.abs(gamepad1.right_stick_x)>.1){
                 robot.rightBack.setPower(-gamepad1.right_stick_x);
                 robot.rightFront.setPower(-gamepad1.right_stick_x);
@@ -72,12 +46,134 @@ public class Controller extends LinearOpMode {
             }
 
 
-
-            /*
-             * Telemetry for debugging
-             */
-
         }
+
     }
 
+    public void driveStraightForward() {
+        double leftSpeed; //Power to feed the motors
+        double rightSpeed;
+        double leftFSpeed;
+        double rightBSpeed;
+
+        double target = robot.mrGyro.getIntegratedZValue();  //Starting direction
+        double startPosition = robot.leftBack.getCurrentPosition();  //Starting position
+
+        robot.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while (Math.abs(gamepad1.left_stick_y) > .4 && (gamepad1.left_stick_x) == 0) {  //While we have not passed out intended distance
+            robot.zAccumulated = robot.mrGyro.getIntegratedZValue();  //Current direction
+
+            leftSpeed = -gamepad1.left_stick_y + (robot.zAccumulated - target) / 100;  //Calculate speed for each side
+            rightSpeed = -gamepad1.left_stick_y - (robot.zAccumulated - target) / 100;
+            leftFSpeed = 0 + (robot.zAccumulated-target)/ 100;
+            rightBSpeed = 0 - (robot.zAccumulated - target) / 100;
+
+            leftSpeed = com.qualcomm.robotcore.util.Range.clip(leftSpeed, -1, 1);
+            rightSpeed = com.qualcomm.robotcore.util.Range.clip(rightSpeed, -1, 1);
+
+            robot.leftBack.setPower(leftSpeed/2);
+            robot.rightFront.setPower(rightSpeed/2);
+            robot.rightBack.setPower(rightBSpeed);
+            robot.leftFront.setPower(leftFSpeed);
+
+            telemetry.addData("1. Left", robot.leftBack.getPower());
+            telemetry.addData("2. Right", robot.rightFront.getPower());
+            telemetry.addData("3. LeftF", robot.leftFront.getPower());
+            telemetry.addData("4. RightB", robot.rightBack.getPower());
+            telemetry.update();
+        }
+
+        robot.leftBack.setPower(0);
+        robot.rightFront.setPower(0);
+        robot.rightBack.setPower(0);
+        robot.leftFront.setPower(0);
+    }
+    public void driveStraightSideways() {
+        double leftSpeed; //Power to feed the motors
+        double rightSpeed;
+        double leftFSpeed;
+        double rightBSpeed;
+
+        double target = robot.mrGyro.getIntegratedZValue();  //Starting direction
+        double startPosition = robot.leftBack.getCurrentPosition();  //Starting position
+
+        robot.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while (Math.abs(gamepad1.left_stick_x) > .4 && (gamepad1.right_stick_y) == 0) {  //While we have not passed out intended distance
+            robot.zAccumulated = robot.mrGyro.getIntegratedZValue();  //Current direction
+
+            leftSpeed = 0 + (robot.zAccumulated - target) / 100;  //Calculate speed for each side
+            rightSpeed = 0 - (robot.zAccumulated - target) / 100;
+            leftFSpeed = gamepad1.left_stick_x + (robot.zAccumulated-target)/ 100;
+            rightBSpeed = gamepad1.left_stick_x - (robot.zAccumulated - target) / 100;
+
+            leftSpeed = com.qualcomm.robotcore.util.Range.clip(leftSpeed, -1, 1);
+            rightSpeed = com.qualcomm.robotcore.util.Range.clip(rightSpeed, -1, 1);
+
+            robot.leftBack.setPower(leftSpeed);
+            robot.rightFront.setPower(rightSpeed);
+            robot.rightBack.setPower(rightBSpeed/2);
+            robot.leftFront.setPower(leftFSpeed/2);
+
+            telemetry.addData("1. Left", robot.leftBack.getPower());
+            telemetry.addData("2. Right", robot.rightFront.getPower());
+            telemetry.addData("3. LeftF", robot.leftFront.getPower());
+            telemetry.addData("4. RightB", robot.rightBack.getPower());
+            telemetry.update();
+        }
+
+        robot.leftBack.setPower(0);
+        robot.rightFront.setPower(0);
+        robot.rightBack.setPower(0);
+        robot.leftFront.setPower(0);
+    }
+    public void driveStraightFinal() {
+        double leftSpeed; //Power to feed the motors
+        double rightSpeed;
+        double leftFSpeed;
+        double rightBSpeed;
+
+        double target = robot.mrGyro.getIntegratedZValue();  //Starting direction
+        double startPosition = robot.leftBack.getCurrentPosition();  //Starting position
+
+        robot.rightFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftFront.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.rightBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        robot.leftBack.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        while (Math.abs(gamepad1.left_stick_y) > 0 || Math.abs(gamepad1.left_stick_x) > 0) {  //While we have not passed out intended distance
+            robot.zAccumulated = robot.mrGyro.getIntegratedZValue();  //Current direction
+
+            leftSpeed = -gamepad1.left_stick_y + (robot.zAccumulated - target) / 100;  //Calculate speed for each side
+            rightSpeed = -gamepad1.left_stick_y - (robot.zAccumulated - target) / 100;
+            leftFSpeed = gamepad1.left_stick_x + (robot.zAccumulated-target)/ 100;
+            rightBSpeed = gamepad1.left_stick_x - (robot.zAccumulated - target) / 100;
+
+            leftSpeed = com.qualcomm.robotcore.util.Range.clip(leftSpeed, -1, 1);
+            rightSpeed = com.qualcomm.robotcore.util.Range.clip(rightSpeed, -1, 1);
+
+            robot.leftBack.setPower(leftSpeed/2);
+            robot.rightFront.setPower(rightSpeed/2);
+            robot.rightBack.setPower(rightBSpeed);
+            robot.leftFront.setPower(leftFSpeed);
+
+            telemetry.addData("1. Left", robot.leftBack.getPower());
+            telemetry.addData("2. Right", robot.rightFront.getPower());
+            telemetry.addData("3. LeftF", robot.leftFront.getPower());
+            telemetry.addData("4. RightB", robot.rightBack.getPower());
+            telemetry.update();
+        }
+
+        robot.leftBack.setPower(0);
+        robot.rightFront.setPower(0);
+        robot.rightBack.setPower(0);
+        robot.leftFront.setPower(0);
+    }
 }
